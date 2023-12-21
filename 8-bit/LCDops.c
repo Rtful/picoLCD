@@ -82,8 +82,6 @@ void LCDinit() {
     LCDsendRawInstruction(0, 0, "00001111");
     sleep_ms(8);
     //8-bit data bus, 2 line display 0x38 - 00111000
-    if (LCDpins[12] == 1){
-        LCDsendRawInstruction(0,0,"00110000");
     if (LCDpins[12] == 1) {
         LCDsendRawInstruction(0, 0, "00110000");
     } else {
