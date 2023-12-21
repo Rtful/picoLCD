@@ -11,7 +11,8 @@ Copyright (c) 2021, zadi15 (https://github.com/zadi15/)
 License can be found at picoLCD/LICENSE
 */
 
-int LCDpins[14] = {0,1,2,3,4,5,6,7,15,16,17,16,2};
+// Edit this array to change what type of display this is. Look at detectLCD() for what that means
+int LCDpins[14] = {0, 1, 2, 3, 4, 5, 6, 7, 15, 16, 17, 20, 4};
 
 int main(){
     bi_decl(bi_program_description("This is a work-in-progress example of interfacing with LCD Displays using HD44780 chips on the Raspberry Pi Pico!"));
@@ -20,7 +21,7 @@ int main(){
 
     //Initialize all needed pins as defined in LCDpins, set them as
     // outputs and then pull them low
-    for(int gpio = 0; gpio < 11; gpio++){
+    for (int gpio = 0; gpio < 11; gpio++) {
         gpio_init(LCDpins[gpio]);
         gpio_set_dir(LCDpins[gpio], true);
         gpio_put(LCDpins[gpio], false);
