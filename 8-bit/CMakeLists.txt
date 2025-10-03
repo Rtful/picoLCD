@@ -8,10 +8,6 @@ pico_sdk_init()
 
 add_executable(picoLCD
     main.c
-    LCDops.c
-    generalOps.c
-    presetChars.c
-    presetMessages.c
     LCD.c
 )
 

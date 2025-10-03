@@ -1,5 +1,6 @@
 #include "LCD.h"
 #include "hardware/gpio.h"
+#include "pico/stdlib.h"
 
 // LSB first
 extern unsigned int LCD_data_pins[8];
@@ -31,6 +32,11 @@ static void put_byte(uint8_t data) {
     }
 }
 
+static void e_fall() {
+    sleep_us(30);
+    gpio_put(LCD_E_pin, false);
+}
+
 static void lcd_wait() {
     gpio_put(LCD_RS_pin, false);
     for (int i = 0; i < 8; i++)
@@ -41,9 +47,9 @@ static void lcd_wait() {
         gpio_put(LCD_E_pin, true);
         if (!gpio_get(LCD_data_pins[7]))
             break;
-        gpio_put(LCD_E_pin, false);
+        e_fall();
     }
-    gpio_put(LCD_E_pin, false);
+    e_fall();
 
     for (int i = 0; i < 8; i++)
         gpio_set_dir(LCD_data_pins[i], true);
@@ -51,10 +57,11 @@ static void lcd_wait() {
 
 void LCD_instruction(uint8_t inst) {
     lcd_wait();
+    gpio_put(LCD_RS_pin, false);
     gpio_put(LCD_RW_pin, false);
     put_byte(inst);
     gpio_put(LCD_E_pin, true);
-    gpio_put(LCD_E_pin, false);
+    e_fall();
 }
 
 void LCD_data(uint8_t data) {
@@ -63,7 +70,7 @@ void LCD_data(uint8_t data) {
     gpio_put(LCD_RS_pin, true);
     put_byte(data);
     gpio_put(LCD_E_pin, true);
-    gpio_put(LCD_E_pin, false);
+    e_fall();
 }
 
 void LCD_goto(uint8_t pos) {
