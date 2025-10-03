@@ -1,0 +1,12 @@
+#include <stdint.h>
+
+void LCD_init_pins();
+void LCD_instruction(uint8_t inst);
+void LCD_data(uint8_t data);
+void LCD_goto(uint8_t pos);
+void LCD_print_char(char c);
+void LCD_print(char *s);
+void LCD_init();
+void LCD_clear();
+void LCD_col_row(uint8_t col, uint8_t row);
+void LCD_create_char(uint8_t num, uint8_t rows[8]);
