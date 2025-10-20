@@ -21,6 +21,16 @@ int main(void) {
 
     //Initialize and clear the LCD, prepping it for characters / instructions
     LCD_init();
+    LCD_create_char(1, (const char[8]){
+        0b00110,
+        0b00110,
+        0b10110,
+        0b11100,
+        0b11110,
+        0b00011,
+        0b00011,
+        0b00000,
+    });
     LCD_clear();
-    LCD_print("Hello World!");
+    LCD_print("Hello World!\001");
 }
