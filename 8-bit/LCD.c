@@ -2,6 +2,8 @@
 #include "hardware/gpio.h"
 #include "pico/stdlib.h"
 
+#define WAIT_TIME 10
+
 // LSB first
 extern unsigned int LCD_data_pins[8];
 
@@ -33,7 +35,7 @@ static void put_byte(uint8_t data) {
 }
 
 static void e_fall() {
-    sleep_us(30);
+    sleep_us(WAIT_TIME);
     gpio_put(LCD_E_pin, false);
 }
 
@@ -45,6 +47,7 @@ static void lcd_wait() {
 
     for (;;) {
         gpio_put(LCD_E_pin, true);
+        sleep_us(WAIT_TIME);
         if (!gpio_get(LCD_data_pins[7]))
             break;
         e_fall();
