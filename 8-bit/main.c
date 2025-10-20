@@ -12,7 +12,7 @@ unsigned int LCD_E_pin = 15;
 unsigned int LCD_RW_pin = 17;
 unsigned int LCD_RS_pin = 16;
 
-int main(){
+int main(void) {
     bi_decl(bi_program_description("This is a work-in-progress example of interfacing with LCD Displays using HD44780 chips on the Raspberry Pi Pico!"));
 
     stdio_init_all();
