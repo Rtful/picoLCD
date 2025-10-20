@@ -12,7 +12,7 @@ add_executable(picoLCD
 )
 
 pico_enable_stdio_usb(picoLCD 1)
-pico_enable_stdio_uart(picoLCD 1)
+pico_enable_stdio_uart(picoLCD 0)
 
 pico_add_extra_outputs(picoLCD)
 

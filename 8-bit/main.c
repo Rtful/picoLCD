@@ -33,4 +33,10 @@ int main(void) {
     });
     LCD_clear();
     LCD_print("Hello World!\001");
+
+    while (1) {
+        int ch = stdio_getchar();
+        if (ch > 255) break;
+        LCD_print_char(ch);
+    }
 }
