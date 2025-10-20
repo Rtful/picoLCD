@@ -4,13 +4,6 @@
 
 #define WAIT_TIME 10
 
-// LSB first
-extern unsigned int LCD_data_pins[8];
-
-extern unsigned int LCD_E_pin;
-extern unsigned int LCD_RW_pin;
-extern unsigned int LCD_RS_pin;
-
 void LCD_init_pins() {
     for (int i = 0; i < 8; i++) {
         gpio_init(LCD_data_pins[i]);

@@ -1,5 +1,12 @@
 #include <stdint.h>
 
+// LSB first
+extern unsigned int LCD_data_pins[8];
+
+extern unsigned int LCD_E_pin;
+extern unsigned int LCD_RW_pin;
+extern unsigned int LCD_RS_pin;
+
 void LCD_init_pins();
 void LCD_instruction(uint8_t inst);
 void LCD_data(uint8_t data);
