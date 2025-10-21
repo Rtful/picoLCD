@@ -112,6 +112,7 @@ static void core1(void) {
         0b01110,
     });
     LCD_clear();
+    LCD_instruction(0b00001100);
     LCD_print("Hello World!\001");
     LCD_col_row(0, 3);
     LCD_print("Temp\002210\337C\37760\337C\00360\337C");
@@ -189,10 +190,23 @@ static char filename_getchar(void) {
     return ch;
 }
 
+static void read_buf(char *buf, size_t size) {
+    char *const end = buf + size - 1;
+    char ch = true;
+    for (char *ptr = buf; ch && ptr != end; ptr++)
+        *ptr = ch = stdio_getchar();
+    *end = 0;
+    while (ch)
+        ch = stdio_getchar();
+}
+
 static void core0(void) {
     while (1) {
         int ch = stdio_getchar();
+        char buf[4];
         switch (ch) {
+            case '\0':
+                break;
             case 'F':
                 char *const end = &core0_filename[FILENAME_BUF_SIZE - 1];
                 for (char *ptr = core0_filename; ch && ptr != end; ptr++)
@@ -203,6 +217,27 @@ static void core0(void) {
                 critical_section_enter_blocking(&shared_lock);
                 shared_changed |= CHANGED_FILENAME;
                 strcpy(shared_filename, core0_filename);
+                critical_section_exit(&shared_lock);
+                break;
+            case 'N':
+                read_buf(buf, sizeof buf);
+                critical_section_enter_blocking(&shared_lock);
+                shared_changed |= CHANGED_TEMP_N;
+                snprintf(shared_temp_n, sizeof shared_temp_n, "%3s", buf);
+                critical_section_exit(&shared_lock);
+                break;
+            case 'E':
+                read_buf(buf, sizeof buf);
+                critical_section_enter_blocking(&shared_lock);
+                shared_changed |= CHANGED_TEMP_E;
+                snprintf(shared_temp_e, sizeof shared_temp_e, "%2s\337", buf);
+                critical_section_exit(&shared_lock);
+                break;
+            case 'B':
+                read_buf(buf, sizeof buf);
+                critical_section_enter_blocking(&shared_lock);
+                shared_changed |= CHANGED_TEMP_B;
+                snprintf(shared_temp_b, sizeof shared_temp_b, "%2s\337", buf);
                 critical_section_exit(&shared_lock);
                 break;
             default:
