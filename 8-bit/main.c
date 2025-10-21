@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 #include "pico/multicore.h"
@@ -18,6 +19,9 @@ License can be found at picoLCD/LICENSE
 #define CHANGED_TEMP_N (1 << 3)
 #define CHANGED_TEMP_E (1 << 4)
 #define CHANGED_TEMP_B (1 << 5)
+#define CHANGED_PROG (1 << 6)
+
+#define PROG_BAR_LEN 16
 
 // core1 data
 unsigned int LCD_data_pins[8] = {0,1,2,3,4,5,6,7};
@@ -30,6 +34,7 @@ static char core1_temp_e[4] = {0};
 static char core1_temp_b[4] = {0};
 static char core1_total[6] = {0};
 static char core1_remaining[6] = {0};
+static char core1_prog_row[21] = {0};
 
 // shared data
 static critical_section_t shared_lock;
@@ -39,6 +44,7 @@ static char shared_temp_e[4] = {0};
 static char shared_temp_b[4] = {0};
 static char shared_total[6] = {0};
 static char shared_remaining[6] = {0};
+static char shared_prog_row[21] = {0};
 static uint8_t shared_changed = 0;
 
 static int shared_ch = EOF;
@@ -129,6 +135,7 @@ static void core1(void) {
         memcpy(core1_temp_b, shared_temp_b, sizeof core1_temp_b);
         memcpy(core1_total, shared_total, sizeof core1_total);
         memcpy(core1_remaining, shared_remaining, sizeof core1_remaining);
+        memcpy(core1_prog_row, shared_prog_row, sizeof core1_prog_row);
         if (changed & CHANGED_FILENAME)
             strcpy(core1_filename, shared_filename);
         shared_ch = EOF;
@@ -149,6 +156,10 @@ static void core1(void) {
         if (changed & CHANGED_TEMP_B) {
             LCD_col_row(16, 3);
             LCD_print(core1_temp_b);
+        }
+        if (changed & CHANGED_PROG) {
+            LCD_col_row(0, 1);
+            LCD_print(core1_prog_row);
         }
         if (changed & CHANGED_FILENAME) {
             LCD_col_row(0, 0);
@@ -217,6 +228,19 @@ static void core0(void) {
                 critical_section_enter_blocking(&shared_lock);
                 shared_changed |= CHANGED_FILENAME;
                 strcpy(shared_filename, core0_filename);
+                critical_section_exit(&shared_lock);
+                break;
+            case 'P':
+                read_buf(buf, sizeof buf);
+                const int prog = atoi(buf);
+                const int bar_len = prog * PROG_BAR_LEN / 100;
+                critical_section_enter_blocking(&shared_lock);
+                shared_changed |= CHANGED_PROG;
+                for (int i = 0; i < bar_len && i < PROG_BAR_LEN; i++)
+                    shared_prog_row[i] = '\377';
+                for (int i = bar_len; i < PROG_BAR_LEN; i++)
+                    shared_prog_row[i] = ' ';
+                snprintf(shared_prog_row + PROG_BAR_LEN, sizeof shared_prog_row - PROG_BAR_LEN, "%3s%%", buf);
                 critical_section_exit(&shared_lock);
                 break;
             case 'N':
