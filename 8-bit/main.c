@@ -81,6 +81,36 @@ static void core1(void) {
         0b11100,
         0b11100,
     });
+    LCD_create_char(4, (const char[8]){
+        0b01010,
+        0b00000,
+        0b01110,
+        0b10001,
+        0b10001,
+        0b11111,
+        0b10001,
+        0b10001,
+    });
+    LCD_create_char(5, (const char[8]){
+        0b01010,
+        0b00000,
+        0b01110,
+        0b10001,
+        0b10001,
+        0b10001,
+        0b10001,
+        0b01110,
+    });
+    LCD_create_char(6, (const char[8]){
+        0b01010,
+        0b00000,
+        0b10001,
+        0b10001,
+        0b10001,
+        0b10001,
+        0b10001,
+        0b01110,
+    });
     LCD_clear();
     LCD_print("Hello World!\001");
     LCD_col_row(0, 3);
@@ -91,8 +121,8 @@ static void core1(void) {
     LCD_print("Rem 0h00m");
     while (1) {
         critical_section_enter_blocking(&shared_lock);
-        int ch = shared_ch;
-        uint8_t changed = shared_changed;
+        const int ch = shared_ch;
+        const uint8_t changed = shared_changed;
         memcpy(core1_temp_n, shared_temp_n, sizeof core1_temp_n);
         memcpy(core1_temp_e, shared_temp_e, sizeof core1_temp_e);
         memcpy(core1_temp_b, shared_temp_b, sizeof core1_temp_b);
@@ -128,15 +158,45 @@ static void core1(void) {
     }
 }
 
+static char filename_getchar(void) {
+    static int saved = EOF;
+    char ch;
+    if (saved != EOF) {
+        ch = saved;
+        saved = EOF;
+        return ch;
+    }
+    if ((ch = stdio_getchar()) == 0xc3) {
+        const char ch2 = stdio_getchar();
+        switch (ch2) {
+            case 0x84: // Ä
+                return '\004';
+            case 0x96: // Ö
+                return '\005';
+            case 0x9c: // Ü
+                return '\006';
+            case 0xa4: // ä
+                return '\341';
+            case 0xb6: // ö
+                return '\357';
+            case 0xbc: // ü
+                return '\365';
+            default:
+                saved = ch2;
+                break;
+        }
+    }
+    return ch;
+}
+
 static void core0(void) {
     while (1) {
         int ch = stdio_getchar();
-        if (ch > 255) break;
         switch (ch) {
             case 'F':
-                char *end = &core0_filename[FILENAME_BUF_SIZE - 1];
+                char *const end = &core0_filename[FILENAME_BUF_SIZE - 1];
                 for (char *ptr = core0_filename; ch && ptr != end; ptr++)
-                    *ptr = ch = stdio_getchar();
+                    *ptr = ch = filename_getchar();
                 *end = 0;
                 while (ch)
                     ch = stdio_getchar();
