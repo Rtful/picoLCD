@@ -29,7 +29,7 @@ static int shared_ch = EOF;
 // core0 data
 static char core0_filename[FILENAME_BUF_SIZE];
 
-void core1(void) {
+static void core1(void) {
     LCD_init_pins();
 
     //Initialize and clear the LCD, prepping it for characters / instructions
@@ -44,9 +44,34 @@ void core1(void) {
         0b00011,
         0b00000,
     });
+    LCD_create_char(2, (const char[8]){
+        0b11111,
+        0b11111,
+        0b11111,
+        0b01110,
+        0b01110,
+        0b01110,
+        0b00100,
+        0b00100,
+    });
+    LCD_create_char(3, (const char[8]){
+        0b00111,
+        0b00111,
+        0b01111,
+        0b01110,
+        0b01110,
+        0b11110,
+        0b11100,
+        0b11100,
+    });
     LCD_clear();
     LCD_print("Hello World!\001");
-    LCD_col_row(1, 1);
+    LCD_col_row(0, 3);
+    LCD_print("Temp\002210\337C\37760\337C\00360\337C");
+    LCD_col_row(0, 2);
+    LCD_print("Tot 0h00m");
+    LCD_col_row(11, 2);
+    LCD_print("Rem 0h00m");
     while (1) {
         critical_section_enter_blocking(&shared_lock);
         if (shared_ch != EOF)
@@ -56,10 +81,10 @@ void core1(void) {
     }
 }
 
-void core0(void) {
+static void core0(void) {
     while (1) {
         int ch = stdio_getchar();
-        if (ch > 255 || ch < 0) break;
+        if (ch > 255) break;
         critical_section_enter_blocking(&shared_lock);
         shared_ch = ch;
         critical_section_exit(&shared_lock);
