@@ -11,17 +11,34 @@ Copyright (c) 2021, zadi15 (https://github.com/zadi15/)
 License can be found at picoLCD/LICENSE
 */
 
+#define FILENAME_BUF_SIZE 21
+#define CHANGED_FILENAME (1 << 0)
+#define CHANGED_TOTAL (1 << 1)
+#define CHANGED_REMAINING (1 << 2)
+#define CHANGED_TEMP_N (1 << 3)
+#define CHANGED_TEMP_E (1 << 4)
+#define CHANGED_TEMP_B (1 << 5)
+
 // core1 data
 unsigned int LCD_data_pins[8] = {0,1,2,3,4,5,6,7};
 unsigned int LCD_E_pin = 15;
 unsigned int LCD_RW_pin = 17;
 unsigned int LCD_RS_pin = 16;
-
-#define FILENAME_BUF_SIZE 20
+static char core1_filename[FILENAME_BUF_SIZE] = {0};
+static char core1_temp_n[4] = {0};
+static char core1_temp_e[4] = {0};
+static char core1_temp_b[4] = {0};
+static char core1_total[6] = {0};
+static char core1_remaining[6] = {0};
 
 // shared data
 static critical_section_t shared_lock;
 static char shared_filename[FILENAME_BUF_SIZE] = {0};
+static char shared_temp_n[4] = {0};
+static char shared_temp_e[4] = {0};
+static char shared_temp_b[4] = {0};
+static char shared_total[6] = {0};
+static char shared_remaining[6] = {0};
 static uint8_t shared_changed = 0;
 
 static int shared_ch = EOF;
@@ -74,10 +91,40 @@ static void core1(void) {
     LCD_print("Rem 0h00m");
     while (1) {
         critical_section_enter_blocking(&shared_lock);
-        if (shared_ch != EOF)
-            LCD_print_char(shared_ch);
+        int ch = shared_ch;
+        uint8_t changed = shared_changed;
+        memcpy(core1_temp_n, shared_temp_n, sizeof core1_temp_n);
+        memcpy(core1_temp_e, shared_temp_e, sizeof core1_temp_e);
+        memcpy(core1_temp_b, shared_temp_b, sizeof core1_temp_b);
+        memcpy(core1_total, shared_total, sizeof core1_total);
+        memcpy(core1_remaining, shared_remaining, sizeof core1_remaining);
+        if (changed & CHANGED_FILENAME)
+            strcpy(core1_filename, shared_filename);
         shared_ch = EOF;
+        shared_changed = 0;
         critical_section_exit(&shared_lock);
+
+        if (ch != EOF)
+            LCD_print_char(ch);
+
+        if (changed & CHANGED_TEMP_N) {
+            LCD_col_row(5, 3);
+            LCD_print(core1_temp_n);
+        }
+        if (changed & CHANGED_TEMP_E) {
+            LCD_col_row(11, 3);
+            LCD_print(core1_temp_e);
+        }
+        if (changed & CHANGED_TEMP_B) {
+            LCD_col_row(16, 3);
+            LCD_print(core1_temp_b);
+        }
+        if (changed & CHANGED_FILENAME) {
+            LCD_col_row(0, 0);
+            LCD_print("                    ");
+            LCD_col_row(0, 0);
+            LCD_print(core1_filename);
+        }
     }
 }
 
@@ -85,9 +132,25 @@ static void core0(void) {
     while (1) {
         int ch = stdio_getchar();
         if (ch > 255) break;
-        critical_section_enter_blocking(&shared_lock);
-        shared_ch = ch;
-        critical_section_exit(&shared_lock);
+        switch (ch) {
+            case 'F':
+                char *end = &core0_filename[FILENAME_BUF_SIZE - 1];
+                for (char *ptr = core0_filename; ch && ptr != end; ptr++)
+                    *ptr = ch = stdio_getchar();
+                *end = 0;
+                while (ch)
+                    ch = stdio_getchar();
+                critical_section_enter_blocking(&shared_lock);
+                shared_changed |= CHANGED_FILENAME;
+                strcpy(shared_filename, core0_filename);
+                critical_section_exit(&shared_lock);
+                break;
+            default:
+                critical_section_enter_blocking(&shared_lock);
+                shared_ch = ch;
+                critical_section_exit(&shared_lock);
+                break;
+        }
     }
 }
 
