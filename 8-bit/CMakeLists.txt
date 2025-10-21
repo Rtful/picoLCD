@@ -16,4 +16,4 @@ pico_enable_stdio_uart(picoLCD 0)
 
 pico_add_extra_outputs(picoLCD)
 
-target_link_libraries(picoLCD pico_stdlib)
+target_link_libraries(picoLCD pico_stdlib pico_multicore)
