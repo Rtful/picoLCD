@@ -47,8 +47,6 @@ static char shared_remaining[6] = {0};
 static char shared_prog_row[21] = {0};
 static uint8_t shared_changed = 0;
 
-static int shared_ch = EOF;
-
 // core0 data
 static char core0_filename[FILENAME_BUF_SIZE];
 
@@ -128,7 +126,6 @@ static void core1(void) {
     LCD_print("Rem 0h00m");
     while (1) {
         critical_section_enter_blocking(&shared_lock);
-        const int ch = shared_ch;
         const uint8_t changed = shared_changed;
         memcpy(core1_temp_n, shared_temp_n, sizeof core1_temp_n);
         memcpy(core1_temp_e, shared_temp_e, sizeof core1_temp_e);
@@ -138,12 +135,8 @@ static void core1(void) {
         memcpy(core1_prog_row, shared_prog_row, sizeof core1_prog_row);
         if (changed & CHANGED_FILENAME)
             strcpy(core1_filename, shared_filename);
-        shared_ch = EOF;
         shared_changed = 0;
         critical_section_exit(&shared_lock);
-
-        if (ch != EOF)
-            LCD_print_char(ch);
 
         if (changed & CHANGED_TEMP_N) {
             LCD_col_row(5, 3);
@@ -265,9 +258,7 @@ static void core0(void) {
                 critical_section_exit(&shared_lock);
                 break;
             default:
-                critical_section_enter_blocking(&shared_lock);
-                shared_ch = ch;
-                critical_section_exit(&shared_lock);
+                while (ch = stdio_getchar());
                 break;
         }
     }
