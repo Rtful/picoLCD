@@ -150,6 +150,14 @@ static void core1(void) {
             LCD_col_row(16, 3);
             LCD_print(core1_temp_b);
         }
+        if (changed & CHANGED_TOTAL) {
+            LCD_col_row(4, 2);
+            LCD_print(core1_total);
+        }
+        if (changed & CHANGED_REMAINING) {
+            LCD_col_row(15, 2);
+            LCD_print(core1_remaining);
+        }
         if (changed & CHANGED_PROG) {
             LCD_col_row(0, 1);
             LCD_print(core1_prog_row);
@@ -208,6 +216,8 @@ static void core0(void) {
     while (1) {
         int ch = stdio_getchar();
         char buf[4];
+        int minutes;
+        int hours;
         switch (ch) {
             case '\0':
                 break;
@@ -234,6 +244,26 @@ static void core0(void) {
                 for (int i = bar_len; i < PROG_BAR_LEN; i++)
                     shared_prog_row[i] = ' ';
                 snprintf(shared_prog_row + PROG_BAR_LEN, sizeof shared_prog_row - PROG_BAR_LEN, "%3s%%", buf);
+                critical_section_exit(&shared_lock);
+                break;
+            case 'T':
+                read_buf(buf, sizeof buf);
+                minutes = atoi(buf);
+                hours = minutes / 60;
+                minutes %= 60;
+                critical_section_enter_blocking(&shared_lock);
+                shared_changed |= CHANGED_TOTAL;
+                snprintf(shared_total, sizeof shared_total, "%dh%02dm", hours, minutes);
+                critical_section_exit(&shared_lock);
+                break;
+            case 'R':
+                read_buf(buf, sizeof buf);
+                minutes = atoi(buf);
+                hours = minutes / 60;
+                minutes %= 60;
+                critical_section_enter_blocking(&shared_lock);
+                shared_changed |= CHANGED_REMAINING;
+                snprintf(shared_remaining, sizeof shared_remaining, "%dh%02dm", hours, minutes);
                 critical_section_exit(&shared_lock);
                 break;
             case 'N':
