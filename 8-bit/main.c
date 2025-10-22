@@ -12,7 +12,7 @@ Copyright (c) 2021, zadi15 (https://github.com/zadi15/)
 License can be found at picoLCD/LICENSE
 */
 
-#define FILENAME_BUF_SIZE 21
+#define FILENAME_BUF_SIZE 256
 #define CHANGED_FILENAME (1 << 0)
 #define CHANGED_TOTAL (1 << 1)
 #define CHANGED_REMAINING (1 << 2)
@@ -22,19 +22,13 @@ License can be found at picoLCD/LICENSE
 #define CHANGED_PROG (1 << 6)
 
 #define PROG_BAR_LEN 16
+#define SCROLL_SPACE 10
 
 // core1 data
 unsigned int LCD_data_pins[8] = {0,1,2,3,4,5,6,7};
 unsigned int LCD_E_pin = 15;
 unsigned int LCD_RW_pin = 17;
 unsigned int LCD_RS_pin = 16;
-static char core1_filename[FILENAME_BUF_SIZE] = {0};
-static char core1_temp_n[4] = {0};
-static char core1_temp_e[4] = {0};
-static char core1_temp_b[4] = {0};
-static char core1_total[6] = {0};
-static char core1_remaining[6] = {0};
-static char core1_prog_row[21] = {0};
 
 // shared data
 static critical_section_t shared_lock;
@@ -51,6 +45,19 @@ static uint8_t shared_changed = 0;
 static char core0_filename[FILENAME_BUF_SIZE];
 
 static void core1(void) {
+    char core1_filename[FILENAME_BUF_SIZE + SCROLL_SPACE + 20] = {0};
+    char core1_temp_n[4] = {0};
+    char core1_temp_e[4] = {0};
+    char core1_temp_b[4] = {0};
+    char core1_total[6] = {0};
+    char core1_remaining[6] = {0};
+    char core1_prog_row[21] = {0};
+    char *core1_filename_pos = core1_filename;
+    char *core1_filename_end = core1_filename;
+    bool core1_reprint_filename = false;
+    int core1_filename_scroll = 0;
+    memset(core1_filename, ' ', SCROLL_SPACE);
+    core1_filename[SCROLL_SPACE] = 0;
     LCD_init_pins();
 
     //Initialize and clear the LCD, prepping it for characters / instructions
@@ -117,14 +124,14 @@ static void core1(void) {
     });
     LCD_clear();
     LCD_instruction(0b00001100);
-    LCD_print("Hello World!\001");
     LCD_col_row(0, 3);
-    LCD_print("Temp\002210\337C\37760\337C\00360\337C");
+    LCD_print("Temp\002   \337C\377  \337C\003  \337C");
     LCD_col_row(0, 2);
     LCD_print("Tot 0h00m");
     LCD_col_row(11, 2);
     LCD_print("Rem 0h00m");
     while (1) {
+        sleep_ms(350);
         critical_section_enter_blocking(&shared_lock);
         const uint8_t changed = shared_changed;
         memcpy(core1_temp_n, shared_temp_n, sizeof core1_temp_n);
@@ -134,7 +141,7 @@ static void core1(void) {
         memcpy(core1_remaining, shared_remaining, sizeof core1_remaining);
         memcpy(core1_prog_row, shared_prog_row, sizeof core1_prog_row);
         if (changed & CHANGED_FILENAME)
-            strcpy(core1_filename, shared_filename);
+            core1_filename_end = stpcpy(core1_filename + SCROLL_SPACE, shared_filename);
         shared_changed = 0;
         critical_section_exit(&shared_lock);
 
@@ -163,11 +170,25 @@ static void core1(void) {
             LCD_print(core1_prog_row);
         }
         if (changed & CHANGED_FILENAME) {
-            LCD_col_row(0, 0);
-            LCD_print("                    ");
-            LCD_col_row(0, 0);
-            LCD_print(core1_filename);
+            core1_filename_pos = core1_filename + SCROLL_SPACE;
+            char buf[21];
+            snprintf(buf, sizeof buf, "%20s", core1_filename);
+            strcpy(core1_filename_end, buf);
+            core1_reprint_filename = true;
         }
+        if (core1_reprint_filename) {
+            core1_reprint_filename = false;
+            LCD_col_row(0, 0);
+            for (int i = 0; i < 20; i++)
+                LCD_print_char(core1_filename_pos[i]);
+        }
+        if (core1_filename_end - core1_filename > 30 && !core1_filename_scroll) {
+            if (++core1_filename_pos == core1_filename_end)
+                core1_filename_pos = core1_filename;
+            core1_reprint_filename = true;
+        }
+        if (!core1_filename_scroll--)
+            core1_filename_scroll = 4;
     }
 }
 
