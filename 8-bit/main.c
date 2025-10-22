@@ -36,8 +36,8 @@ static char shared_filename[FILENAME_BUF_SIZE] = {0};
 static char shared_temp_n[4] = {0};
 static char shared_temp_e[4] = {0};
 static char shared_temp_b[4] = {0};
-static char shared_total[6] = {0};
-static char shared_remaining[6] = {0};
+static char shared_total[7] = {0};
+static char shared_remaining[7] = {0};
 static char shared_prog_row[21] = {0};
 static uint8_t shared_changed = 0;
 
@@ -49,8 +49,8 @@ static void core1(void) {
     char core1_temp_n[4] = {0};
     char core1_temp_e[4] = {0};
     char core1_temp_b[4] = {0};
-    char core1_total[6] = {0};
-    char core1_remaining[6] = {0};
+    char core1_total[7] = {0};
+    char core1_remaining[7] = {0};
     char core1_prog_row[21] = {0};
     char *core1_filename_pos = core1_filename;
     char *core1_filename_end = core1_filename;
@@ -158,11 +158,11 @@ static void core1(void) {
             LCD_print(core1_temp_b);
         }
         if (changed & CHANGED_TOTAL) {
-            LCD_col_row(4, 2);
+            LCD_col_row(3, 2);
             LCD_print(core1_total);
         }
         if (changed & CHANGED_REMAINING) {
-            LCD_col_row(15, 2);
+            LCD_col_row(14, 2);
             LCD_print(core1_remaining);
         }
         if (changed & CHANGED_PROG) {
@@ -236,7 +236,7 @@ static void read_buf(char *buf, size_t size) {
 static void core0(void) {
     while (1) {
         int ch = stdio_getchar();
-        char buf[4];
+        char buf[6];
         int minutes;
         int hours;
         switch (ch) {
@@ -274,7 +274,7 @@ static void core0(void) {
                 minutes %= 60;
                 critical_section_enter_blocking(&shared_lock);
                 shared_changed |= CHANGED_TOTAL;
-                snprintf(shared_total, sizeof shared_total, "%dh%02dm", hours, minutes);
+                snprintf(shared_total, sizeof shared_total, "%2dh%02dm", hours, minutes);
                 critical_section_exit(&shared_lock);
                 break;
             case 'R':
@@ -284,7 +284,7 @@ static void core0(void) {
                 minutes %= 60;
                 critical_section_enter_blocking(&shared_lock);
                 shared_changed |= CHANGED_REMAINING;
-                snprintf(shared_remaining, sizeof shared_remaining, "%dh%02dm", hours, minutes);
+                snprintf(shared_remaining, sizeof shared_remaining, "%2dh%02dm", hours, minutes);
                 critical_section_exit(&shared_lock);
                 break;
             case 'N':
