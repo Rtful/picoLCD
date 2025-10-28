@@ -1,5 +1,29 @@
 # picoLCD
 
+## How to update data on the display
+Format: character (type) string (data) null
+
+Types:
+- F: filename (text)
+- P: progress (%)
+- T: total (min)
+- R: remaining (min)
+- N: temperature nozzle (C)
+- E: temperature environment (C)
+- B: temperature bed (C)
+
+Example:
+
+`"FFilename_xyz.gcode\0P0\0T225\0R224\0N210\0E40\0B60\0"`
+
+    filename: Filename_xyz.gcode
+    progress: 0%
+    total: 3h 45min
+    remaining: 3h 44min
+    nozzle temp: 210 °C
+    env temp: 40 °C
+    bed temp: 60 °C
+
 ## About picoLCD
 picoLCD is a collection of functions to make interfacing with HD44780 (and other pin & instruction compatible chips such as the Sitronix ST7066) based LCD screens easier on the Raspberry Pi Pico. Rather than reading through data sheets to figure out the correct set of instructions to send to the screen, picoLCD attempts to make it a simpler process, while still being extremely versatile. It's as simple as copying the `.c & .h` files to your project, add some `#include`s, set some pins and off you go!
 
